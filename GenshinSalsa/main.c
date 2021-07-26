@@ -215,8 +215,14 @@ int main(int argc, char** argv)
 
         if (passed)
         {
-            printf("Waiting 60 seconds\n");
-            Sleep(60000);
+            CloseHandle(hProcess);
+            hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+            if (!hProcess)
+            {
+                printf("Failed to open WMP process handle (error=%u)\n", GetLastError());
+                system("pause");
+                return 1;
+            }
         }
 
         printf("Injecting\n");
