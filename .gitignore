@@ -1,0 +1,10 @@
+.vs/
+*.pdb
+*.iobj
+*.ipdb
+Debug/
+x64/Debug/
+GenshinSalsa/Debug/
+GenshinSalsa/Release/
+GenshinSalsa/x64/Debug/
+GenshinSalsa/x64/Release/
