@@ -181,11 +181,12 @@ int main(int argc, char** argv)
             return 1;
         }
         
+        int passed = 0;
         BYTE nameBuffer[8192];
         HANDLE hTarget, hSource;
         HANDLE hCurrent = GetCurrentProcess();
         PROCESS_HANDLE_SNAPSHOT_INFORMATION* info = (PROCESS_HANDLE_SNAPSHOT_INFORMATION*)buffer;
-        for (ULONG i = 0; i < 200; i++)
+        for (ULONG i = 0; i < 500; i++)
         {
             hSource = info->Handles[i].HandleValue;
             if (!DuplicateHandle(hProcess, hSource, hCurrent, &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
@@ -205,10 +206,17 @@ int main(int argc, char** argv)
                     DuplicateHandle(hProcess, hSource, hCurrent, &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE);
                     CloseHandle(hTarget);
                     printf("Mhyprot2 closed\n");
+                    passed = 1;
                     break;
                 }
             }
             memset(nameBuffer, 0, 8192);
+        }
+
+        if (passed)
+        {
+            printf("Waiting 60 seconds\n");
+            Sleep(60000);
         }
 
         printf("Injecting\n");
@@ -218,7 +226,7 @@ int main(int argc, char** argv)
         if (!dll_path_remote)
         {
             CloseHandle(hProcess);
-            printf("Failed to alloc space\n");
+            printf("Failed to alloc space try again\n");
             system("pause");
             return 1;
         }
