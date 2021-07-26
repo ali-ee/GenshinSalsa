@@ -185,39 +185,33 @@ int main(int argc, char** argv)
         HANDLE hTarget, hSource;
         HANDLE hCurrent = GetCurrentProcess();
         PROCESS_HANDLE_SNAPSHOT_INFORMATION* info = (PROCESS_HANDLE_SNAPSHOT_INFORMATION*)buffer;
-        for (ULONG i = 0; i < info->NumberOfHandles; i++)
+        for (ULONG i = 0; i < 200; i++)
         {
             hSource = info->Handles[i].HandleValue;
-            NTSTATUS status = NtQueryObject(hSource, ObjectNameInformation, nameBuffer, 8192, NULL);
+            if (!DuplicateHandle(hProcess, hSource, hCurrent, &hTarget, 0, FALSE, DUPLICATE_SAME_ACCESS))
+                continue;
+            NTSTATUS status = NtQueryObject(hTarget, ObjectNameInformation, nameBuffer, 8192, NULL);
+            CloseHandle(hTarget);
             if (!NT_SUCCESS(status))
             {
                 memset(nameBuffer, 0, 8192);
                 continue;
             }
             UNICODE_STRING* name = (UNICODE_STRING*)nameBuffer;
-            if (name->Buffer && _wcsnicmp(name->Buffer, L"\\Device\\mhyprot2", 17) == 0)
+            if (name->Buffer)
             {
-                DuplicateHandle(hProcess, hSource, hCurrent, &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE);
-                CloseHandle(hTarget);
-                printf("Mhyprot2 closed\n");
-                break;
+                if (_wcsnicmp(name->Buffer, L"\\Device\\mhyprot2", 17) == 0)
+                {
+                    DuplicateHandle(hProcess, hSource, hCurrent, &hTarget, 0, FALSE, DUPLICATE_CLOSE_SOURCE);
+                    CloseHandle(hTarget);
+                    printf("Mhyprot2 closed\n");
+                    break;
+                }
             }
             memset(nameBuffer, 0, 8192);
         }
 
         printf("Injecting\n");
-
-        FILETIME ft;
-        SYSTEMTIME st;
-        GetSystemTime(&st);
-        SystemTimeToFileTime(&st, &ft);
-
-        FILETIME create, exit, kernel, user;
-        GetProcessTimes(hProcess, &create, &exit, &kernel, &user);
-
-        int32_t delta = 10 - (int32_t)((*(uint64_t*)(&ft) - *(uint64_t*)(&create.dwLowDateTime)) / 10000000U);
-        if (delta > 0)
-            Sleep(delta * 1000);
 
         size_t sizef = strlen(currentdir);
         LPVOID dll_path_remote = VirtualAllocEx(hProcess, NULL, sizef + 1, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
